@@ -1,6 +1,5 @@
 streamlit
 pandas
-psycopg2
+psycopg2-binary
 streamlit_folium
 folium
-json
