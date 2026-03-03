@@ -17,7 +17,7 @@ def get_data():
         user=st.secrets["database"]["user"],
         password=st.secrets["database"]["password"],
         host=st.secrets["database"]["host"],
-        port=st.secrets["database"]["port"]
+        port=st.secrets["database"]["port"],
         sslmode="require"
     )
     # Fetch both attributes for stats and geometry for the map
@@ -84,3 +84,4 @@ for _, row in filtered_df.iterrows():
 # Render the map in Streamlit
 
 st_folium(m, width=1000, height=500)
+
