@@ -58,48 +58,43 @@ min_size, max_size = st.select_slider(
 filtered_df = df[(df['length_m'] >= min_size) & (df['length_m'] <= max_size)]
 # 4. INTERACTIVE MAP
 st.subheader("Interactive Road Explorer")
-m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16, tiles='OpenStreetMap')
 
-# Download Filtered Data
-csv_data = filtered_df.drop(columns=['geom']).to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="📥 Download Filtered Report",
-    data=csv_data,
-    file_name='Kiriaini_Filtered_Report.csv',
-    mime='text/csv',
-)
-
-# 4. INTERACTIVE MAP
-st.subheader("Interactive Road Explorer")
-
-# Initialize map - Note: ensure the zoom is tight enough to see local roads
+# Initialize map - centered on Kiriaini
 m = folium.Map(location=[-0.6026, 36.9538], zoom_start=15, tiles='OpenStreetMap')
 
-# Add GeoJSON features with a more robust styling approach
+# Prepare a single GeoJSON object from all filtered roads
+features = []
 for _, row in filtered_df.iterrows():
-    try:
-        geom = json.loads(row['geom'])
-        
-        # Coordinate Correction (lon, lat) -> (lat, lon)
-        if geom['type'] == 'LineString':
-            geom['coordinates'] = [[coord[1], coord[0]] for coord in geom['coordinates']]
-        elif geom['type'] == 'MultiLineString':
-            geom['coordinates'] = [
-                [[coord[1], coord[0]] for coord in line] for line in geom['coordinates']
-            ]
-        
-        # Explicitly define the line appearance
-        folium.GeoJson(
-            geom,
-            style_function=lambda x: {
-                'color': '#FF5733',   # Bright orange/red so it's impossible to miss
-                'weight': 5,          # Thick enough to stand out over the base map
-                'opacity': 1.0,       # Fully opaque
-            },
-            tooltip=f"Road ID: {row['gid']} | Length: {row['length_m']:.1f}m"
-        ).add_to(m)
-    except Exception as e:
-        st.error(f"Error rendering road {row['gid']}: {e}")
+    # Parse the geometry string from PostGIS
+    geometry = json.loads(row['geom'])
+    
+    # Create a GeoJSON Feature
+    feature = {
+        "type": "Feature",
+        "geometry": geometry,
+        "properties": {
+            "gid": row['gid'],
+            "length": f"{row['length_m']:.2f} m"
+        }
+    }
+    features.append(feature)
 
-# Render the map
-st_folium(m, width=1000, height=500, key="kiriaini_map")
+geojson_data = {
+    "type": "FeatureCollection",
+    "features": features
+}
+
+# Robust rendering using Folium's native GeoJson handler
+folium.GeoJson(
+    geojson_data,
+    name="Kiriaini Roads",
+    style_function=lambda x: {
+        'color': '#FF3333',   # Bright Red
+        'weight': 6,          # Very Thick
+        'opacity': 1.0
+    },
+    tooltip=folium.GeoJsonTooltip(fields=['gid', 'length'], aliases=['ID:', 'Length:'])
+).add_to(m)
+
+# Force the map to show the roads
+st_folium(m, width=1100, height=600, key="kiriaini_final_map")
