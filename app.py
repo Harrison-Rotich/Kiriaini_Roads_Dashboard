@@ -58,8 +58,8 @@ min_size, max_size = st.select_slider(
 filtered_df = df[(df['length_m'] >= min_size) & (df['length_m'] <= max_size)]
 # 4. INTERACTIVE MAP
 st.subheader("Interactive Road Explorer")
-m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16, tiles=None)
-folium.TileLayer('OpenStreetMap').add_to(m) #explictly add OSM tiles
+m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16, tiles='OpenStreetMap')
+
 # Download Filtered Data
 csv_data = filtered_df.drop(columns=['geom']).to_csv(index=False).encode('utf-8')
 st.download_button(
@@ -69,41 +69,25 @@ st.download_button(
     mime='text/csv',
 )
 
-# Add GeoJSON to map
+# Add GeoJSON features with coordinate swap
 for _, row in filtered_df.iterrows():
-    geojson_feature = {
-        "type" : "Feature",
-        "geometry" : json.loads(row['geom']),  #Safe instead of eval()
-    }
+    geom = json.loads(row['geom'])
+    
+    # Swap each coordinate from [lon, lat] -> [lat, lon]
+    if geom['type'] == 'LineString':
+        geom['coordinates'] = [[lat, lon] for lon, lat in geom['coordinates']]
+    elif geom['type'] == 'MultiLineString':
+        geom['coordinates'] = [
+            [[lat, lon] for lon, lat in line] for line in geom['coordinates']
+        ]
     
     folium.GeoJson(
-        geojson_feature,
+        geom,
         tooltip=f"gid: {row['gid']} | Length: {row['length_m']} m"
-        ).add_to(m)
-
-# Auto-zoom to fit all filtered roads
-def extract_coords(coords):
-    """Recursively flatten coordinates from LineString or MultiLineString"""
-    flat = []
-    if isinstance(coords[0], (float, int)):
-        # single coordinate pair [lat, lon]
-        flat.append(coords)
-    else:
-        for c in coords:
-            flat.extend(extract_coords(c))
-    return flat
-
-if not filtered_df.empty:
-    all_coords = []
-    for geom in filtered_df['geom']:
-        coords = json.loads(geom)['coordinates']
-        all_coords.extend(extract_coords(coords))
-    
-    all_lats = [lat for lat, lon in all_coords]
-    all_lons = [lon for lat, lon in all_coords]
-    m.fit_bounds([[min(all_lats), min(all_lons)], [max(all_lats), max(all_lons)]])
+    ).add_to(m)
 # Render the map in Streamlit
 st_folium(m, width=1000, height=500)
+
 
 
 
