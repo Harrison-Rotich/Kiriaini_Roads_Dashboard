@@ -58,7 +58,7 @@ min_size, max_size = st.select_slider(
 filtered_df = df[(df['length_m'] >= min_size) & (df['length_m'] <= max_size)]
 # 4. INTERACTIVE MAP
 st.subheader("Interactive Road Explorer")
-m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16)
+m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16, tiles="OpenStreetMap")
 
 # Download Filtered Data
 csv_data = filtered_df.drop(columns=['geom']).to_csv(index=False).encode('utf-8')
@@ -82,8 +82,8 @@ for _, row in filtered_df.iterrows():
         ).add_to(m)
 
 # Render the map in Streamlit
-
 st_folium(m, width=1000, height=500)
+
 
 
 
