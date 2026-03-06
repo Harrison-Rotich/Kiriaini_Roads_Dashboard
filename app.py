@@ -69,7 +69,7 @@ st.download_button(
     mime='text/csv',
 )
 
-# Add GeoJSON features with coordinate swap
+# Add GeoJSON features with coordinate swap and custom styling
 for _, row in filtered_df.iterrows():
     geom = json.loads(row['geom'])
     
@@ -81,12 +81,23 @@ for _, row in filtered_df.iterrows():
             [[lat, lon] for lon, lat in line] for line in geom['coordinates']
         ]
     
+    # Render the line with specific styling
     folium.GeoJson(
         geom,
-        tooltip=f"gid: {row['gid']} | Length: {row['length_m']} m"
+        style_function=lambda x: {
+            'color': '#3186cc',    # A nice blue for the road lines
+            'weight': 4,           # Thickness of the line
+            'opacity': 0.8         # Transparency
+        },
+        highlight_function=lambda x: {
+            'color': '#ff0000',    # Changes to red when hovering
+            'weight': 6
+        },
+        tooltip=f"ID: {row['gid']} | Length: {row['length_m']:.2f} m"
     ).add_to(m)
 # Render the map in Streamlit
 st_folium(m, width=1000, height=500)
+
 
 
 
