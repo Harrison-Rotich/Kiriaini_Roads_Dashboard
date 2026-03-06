@@ -21,7 +21,7 @@ def get_data():
         sslmode="require"
     )
     # Fetch both attributes for stats and geometry for the map
-    df = pd.read_sql_query("SELECT id, length_m, ST_AsGeoJSON(ST_Transform(geom, 4326)) as geom FROM kiriaini_roads", conn)
+    df = pd.read_sql_query("SELECT gid, length_m, ST_AsGeoJSON(ST_Transform(geom, 4326)) as geom FROM kiriaini_roads", conn)
     conn.close()
     return df
 
@@ -78,11 +78,12 @@ for _, row in filtered_df.iterrows():
     
     folium.GeoJson(
         geojson_feature,
-        tooltip=f"ID: {row['id']} | Length: {row['length_m']} m"
+        tooltip=f"ID: {row['gid']} | Length: {row['length_m']} m"
         ).add_to(m)
 
 # Render the map in Streamlit
 
 st_folium(m, width=1000, height=500)
+
 
 
