@@ -69,41 +69,37 @@ st.download_button(
     mime='text/csv',
 )
 
-# Add GeoJSON features with coordinate swap and custom styling
+# 4. INTERACTIVE MAP
+st.subheader("Interactive Road Explorer")
+
+# Initialize map - Note: ensure the zoom is tight enough to see local roads
+m = folium.Map(location=[-0.6026, 36.9538], zoom_start=15, tiles='OpenStreetMap')
+
+# Add GeoJSON features with a more robust styling approach
 for _, row in filtered_df.iterrows():
-    geom = json.loads(row['geom'])
-    
-    # Swap each coordinate from [lon, lat] -> [lat, lon]
-    if geom['type'] == 'LineString':
-        geom['coordinates'] = [[lat, lon] for lon, lat in geom['coordinates']]
-    elif geom['type'] == 'MultiLineString':
-        geom['coordinates'] = [
-            [[lat, lon] for lon, lat in line] for line in geom['coordinates']
-        ]
-    
-    # Render the line with specific styling
-    folium.GeoJson(
-        geom,
-        style_function=lambda x: {
-            'color': '#3186cc',    # A nice blue for the road lines
-            'weight': 4,           # Thickness of the line
-            'opacity': 0.8         # Transparency
-        },
-        highlight_function=lambda x: {
-            'color': '#ff0000',    # Changes to red when hovering
-            'weight': 6
-        },
-        tooltip=f"ID: {row['gid']} | Length: {row['length_m']:.2f} m"
-    ).add_to(m)
-# Render the map in Streamlit
-st_folium(m, width=1000, height=500)
+    try:
+        geom = json.loads(row['geom'])
+        
+        # Coordinate Correction (lon, lat) -> (lat, lon)
+        if geom['type'] == 'LineString':
+            geom['coordinates'] = [[coord[1], coord[0]] for coord in geom['coordinates']]
+        elif geom['type'] == 'MultiLineString':
+            geom['coordinates'] = [
+                [[coord[1], coord[0]] for coord in line] for line in geom['coordinates']
+            ]
+        
+        # Explicitly define the line appearance
+        folium.GeoJson(
+            geom,
+            style_function=lambda x: {
+                'color': '#FF5733',   # Bright orange/red so it's impossible to miss
+                'weight': 5,          # Thick enough to stand out over the base map
+                'opacity': 1.0,       # Fully opaque
+            },
+            tooltip=f"Road ID: {row['gid']} | Length: {row['length_m']:.1f}m"
+        ).add_to(m)
+    except Exception as e:
+        st.error(f"Error rendering road {row['gid']}: {e}")
 
-
-
-
-
-
-
-
-
-
+# Render the map
+st_folium(m, width=1000, height=500, key="kiriaini_map")
