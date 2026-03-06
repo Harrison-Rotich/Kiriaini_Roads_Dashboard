@@ -78,12 +78,13 @@ for _, row in filtered_df.iterrows():
     
     folium.GeoJson(
         geojson_feature,
-        tooltip=f"ID: {row['gid']} | Length: {row['length_m']} m"
+        tooltip=f"gid: {row['gid']} | Length: {row['length_m']} m"
         ).add_to(m)
 
 # Render the map in Streamlit
 
 st_folium(m, width=1000, height=500)
+
 
 
 
