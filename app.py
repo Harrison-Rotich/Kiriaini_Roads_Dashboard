@@ -80,14 +80,31 @@ for _, row in filtered_df.iterrows():
         geojson_feature,
         tooltip=f"gid: {row['gid']} | Length: {row['length_m']} m"
         ).add_to(m)
+
 # Auto-zoom to fit all filtered roads
+def extract_coords(coords):
+    """Recursively flatten coordinates from LineString or MultiLineString"""
+    flat = []
+    if isinstance(coords[0], (float, int)):
+        # single coordinate pair [lat, lon]
+        flat.append(coords)
+    else:
+        for c in coords:
+            flat.extend(extract_coords(c))
+    return flat
+
 if not filtered_df.empty:
-    bounds = [json.loads(geom)['coordinates'] for geom in filtered_df['geom']]
-    all_lats = [lat for line in bounds for lat, lon in line]
-    all_lons = [lon for line in bounds for lat, lon in line]
+    all_coords = []
+    for geom in filtered_df['geom']:
+        coords = json.loads(geom)['coordinates']
+        all_coords.extend(extract_coords(coords))
+    
+    all_lats = [lat for lat, lon in all_coords]
+    all_lons = [lon for lat, lon in all_coords]
     m.fit_bounds([[min(all_lats), min(all_lons)], [max(all_lats), max(all_lons)]])
 # Render the map in Streamlit
 st_folium(m, width=1000, height=500)
+
 
 
 
