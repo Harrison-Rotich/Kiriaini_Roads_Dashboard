@@ -58,8 +58,8 @@ min_size, max_size = st.select_slider(
 filtered_df = df[(df['length_m'] >= min_size) & (df['length_m'] <= max_size)]
 # 4. INTERACTIVE MAP
 st.subheader("Interactive Road Explorer")
-m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16, tiles='OpenStreetMap', attr='OpenStreetMap')
-
+m = folium.Map(location=[-0.6025998054452301, 36.95381681317332], zoom_start=16, tiles=None)
+folium.TileLayer('OpenStreetMap').add_to(m) #explictly add OSM tiles
 # Download Filtered Data
 csv_data = filtered_df.drop(columns=['geom']).to_csv(index=False).encode('utf-8')
 st.download_button(
@@ -80,9 +80,15 @@ for _, row in filtered_df.iterrows():
         geojson_feature,
         tooltip=f"gid: {row['gid']} | Length: {row['length_m']} m"
         ).add_to(m)
-
+# Auto-zoom to fit all filtered roads
+if not filtered_df.empty:
+    bounds = [json.loads(geom)['coordinates'] for geom in filtered_df['geom']]
+    all_lats = [lat for line in bounds for lat, lon in line]
+    all_lons = [lon for line in bounds for lat, lon in line]
+    m.fit_bounds([[min(all_lats), min(all_lons)], [max(all_lats), max(all_lons)]])
 # Render the map in Streamlit
 st_folium(m, width=1000, height=500)
+
 
 
 
